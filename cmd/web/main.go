@@ -9,7 +9,8 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
-	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/metric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
@@ -44,13 +45,13 @@ func initOtelSDK(ctx context.Context) (func(context.Context) error, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create otlp metric exporter: %w", err)
 	}
-	meterProvider := metric.NewMeterProvider(
-		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
-		metric.WithResource(res),
-		metric.WithView(metric.NewView(
-			metric.Instrument{Name: "http.server.request.duration"},
-			metric.Stream{
-				Aggregation: metric.AggregationExplicitBucketHistogram{
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExporter)),
+		sdkmetric.WithResource(res),
+		sdkmetric.WithView(sdkmetric.NewView(
+			sdkmetric.Instrument{Name: "http.server.request.duration"},
+			sdkmetric.Stream{
+				Aggregation: sdkmetric.AggregationExplicitBucketHistogram{
 					Boundaries: []float64{0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2.5, 5, 7.5, 10},
 				},
 			},
@@ -60,7 +61,7 @@ func initOtelSDK(ctx context.Context) (func(context.Context) error, error) {
 	otel.SetTracerProvider(tracerProvider)
 	otel.SetMeterProvider(meterProvider)
 
-	httpRequestDuration, err = otel.Meter("golang-clean-architecture").Float64Histogram(
+	_, err = otel.Meter("golang-clean-architecture").Float64Histogram(
 		"http.server.request.duration",
 		metric.WithUnit("s"),
 		metric.WithDescription("Duration of HTTP server requests."),
