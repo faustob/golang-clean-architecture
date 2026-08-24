@@ -13,6 +13,13 @@ require (
 	golang.org/x/crypto v0.41.0
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/gorm v1.30.1
+	github.com/gofiber/contrib/otelfiber/v2 v2.1.1
+	go.opentelemetry.io/otel v1.36.0
+	go.opentelemetry.io/otel/metric v1.36.0
+	go.opentelemetry.io/otel/sdk v1.36.0
+	go.opentelemetry.io/otel/sdk/metric v1.36.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.36.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.36.0
 )
 
 require (
