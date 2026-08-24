@@ -1,13 +1,25 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"golang-clean-architecture/internal/config"
+	"time"
 )
 
 func main() {
 	viperConfig := config.NewViper()
 	log := config.NewLogger(viperConfig)
+
+	shutdownTelemetry := config.InitTelemetry(context.Background(), "golang-clean-architecture-web", log)
+	defer func() {
+		shutdownCtx, cancelShutdown := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancelShutdown()
+		if err := shutdownTelemetry(shutdownCtx); err != nil {
+			log.WithError(err).Error("failed to shutdown telemetry")
+		}
+	}()
+
 	db := config.NewDatabase(viperConfig, log)
 	validate := config.NewValidator(viperConfig)
 	app := config.NewFiber(viperConfig)
