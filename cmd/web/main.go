@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"golang-clean-architecture/internal/config"
 )
@@ -8,6 +9,17 @@ import (
 func main() {
 	viperConfig := config.NewViper()
 	log := config.NewLogger(viperConfig)
+
+	shutdownMeterProvider, err := config.NewOtelMeterProvider(context.Background())
+	if err != nil {
+		log.Fatalf("Failed to initialize OpenTelemetry meter provider: %v", err)
+	}
+	defer func() {
+		if shutdownErr := shutdownMeterProvider(context.Background()); shutdownErr != nil {
+			log.Warnf("Failed to shutdown OpenTelemetry meter provider: %v", shutdownErr)
+		}
+	}()
+
 	db := config.NewDatabase(viperConfig, log)
 	validate := config.NewValidator(viperConfig)
 	app := config.NewFiber(viperConfig)
@@ -23,7 +35,7 @@ func main() {
 	})
 
 	webPort := viperConfig.GetInt("web.port")
-	err := app.Listen(fmt.Sprintf(":%d", webPort))
+	err = app.Listen(fmt.Sprintf(":%d", webPort))
 	if err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}

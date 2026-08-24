@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/XSAM/otelsql"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -23,7 +26,30 @@ func NewDatabase(viper *viper.Viper, log *logrus.Logger) *gorm.DB {
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local", username, password, host, port, database)
 
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+	// otelsql wraps the standard database/sql "mysql" driver so every query executed
+	// through the resulting *sql.DB emits the OpenTelemetry db-client semantic convention
+	// telemetry (db.client.operation.duration, with db.system.name/db.operation.name/
+	// error.type attributes) for every GORM call site, without hand-instrumenting each one.
+	sqlDB, err := otelsql.Open("mysql", dsn,
+		otelsql.WithAttributes(
+			semconv.DBSystemMySQL,
+			attribute.String("db.system.name", "mysql"),
+		),
+	)
+	if err != nil {
+		log.Fatalf("failed to open database: %v", err)
+	}
+
+	if err := otelsql.RegisterDBStatsMetrics(sqlDB,
+		otelsql.WithAttributes(
+			semconv.DBSystemMySQL,
+			attribute.String("db.system.name", "mysql"),
+		),
+	); err != nil {
+		log.Warnf("failed to register database connection pool metrics: %v", err)
+	}
+
+	db, err := gorm.Open(mysql.New(mysql.Config{Conn: sqlDB}), &gorm.Config{
 		Logger: logger.New(&logrusWriter{Logger: log}, logger.Config{
 			SlowThreshold:             time.Second * 5,
 			Colorful:                  false,
