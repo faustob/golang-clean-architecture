@@ -7,6 +7,7 @@ import (
 	"golang-clean-architecture/internal/model"
 	"golang-clean-architecture/internal/model/converter"
 	"golang-clean-architecture/internal/repository"
+	"golang-clean-architecture/internal/telemetry"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -40,6 +41,7 @@ func (c *UserUseCase) Verify(ctx context.Context, request *model.VerifyUserReque
 	defer tx.Rollback()
 
 	err := c.Validate.Struct(request)
+	telemetry.RecordValidationStep(ctx, "user-crud", "verify", err)
 	if err != nil {
 		c.Log.Warnf("Invalid request body : %+v", err)
 		return nil, fiber.ErrBadRequest
@@ -64,6 +66,7 @@ func (c *UserUseCase) Create(ctx context.Context, request *model.RegisterUserReq
 	defer tx.Rollback()
 
 	err := c.Validate.Struct(request)
+	telemetry.RecordValidationStep(ctx, "user-crud", "create", err)
 	if err != nil {
 		c.Log.Warnf("Invalid request body : %+v", err)
 		return nil, fiber.ErrBadRequest
@@ -120,7 +123,9 @@ func (c *UserUseCase) Login(ctx context.Context, request *model.LoginUserRequest
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := c.Validate.Struct(request); err != nil {
+	err := c.Validate.Struct(request)
+	telemetry.RecordValidationStep(ctx, "user-crud", "login", err)
+	if err != nil {
 		c.Log.Warnf("Invalid request body  : %+v", err)
 		return nil, fiber.ErrBadRequest
 	}
@@ -165,7 +170,9 @@ func (c *UserUseCase) Current(ctx context.Context, request *model.GetUserRequest
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := c.Validate.Struct(request); err != nil {
+	err := c.Validate.Struct(request)
+	telemetry.RecordValidationStep(ctx, "user-crud", "current", err)
+	if err != nil {
 		c.Log.Warnf("Invalid request body : %+v", err)
 		return nil, fiber.ErrBadRequest
 	}
@@ -188,7 +195,9 @@ func (c *UserUseCase) Logout(ctx context.Context, request *model.LogoutUserReque
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := c.Validate.Struct(request); err != nil {
+	err := c.Validate.Struct(request)
+	telemetry.RecordValidationStep(ctx, "user-crud", "logout", err)
+	if err != nil {
 		c.Log.Warnf("Invalid request body : %+v", err)
 		return false, fiber.ErrBadRequest
 	}
@@ -229,7 +238,9 @@ func (c *UserUseCase) Update(ctx context.Context, request *model.UpdateUserReque
 	tx := c.DB.WithContext(ctx).Begin()
 	defer tx.Rollback()
 
-	if err := c.Validate.Struct(request); err != nil {
+	err := c.Validate.Struct(request)
+	telemetry.RecordValidationStep(ctx, "user-crud", "update", err)
+	if err != nil {
 		c.Log.Warnf("Invalid request body : %+v", err)
 		return nil, fiber.ErrBadRequest
 	}
