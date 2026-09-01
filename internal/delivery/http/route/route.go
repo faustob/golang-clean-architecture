@@ -3,6 +3,7 @@ package route
 import (
 	"golang-clean-architecture/internal/delivery/http"
 
+	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -15,6 +16,9 @@ type RouteConfig struct {
 }
 
 func (c *RouteConfig) Setup() {
+	// otelfiber emits the standard http.server.request.duration histogram (method/route/status)
+	// for every request; register it first so it wraps both guest and authenticated routes.
+	c.App.Use(otelfiber.Middleware())
 	c.SetupGuestRoute()
 	c.SetupAuthRoute()
 }

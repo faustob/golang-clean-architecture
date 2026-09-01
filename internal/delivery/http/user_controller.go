@@ -3,6 +3,7 @@ package http
 import (
 	"golang-clean-architecture/internal/delivery/http/middleware"
 	"golang-clean-architecture/internal/model"
+	"golang-clean-architecture/internal/telemetry"
 	"golang-clean-architecture/internal/usecase"
 
 	"github.com/gofiber/fiber/v2"
@@ -22,86 +23,114 @@ func NewUserController(useCase *usecase.UserUseCase, logger *logrus.Logger) *Use
 }
 
 func (c *UserController) Register(ctx *fiber.Ctx) error {
+	flowCtx, span, start := telemetry.StartFlow(ctx.UserContext(), "register")
+	defer span.End()
+
 	request := new(model.RegisterUserRequest)
 	err := ctx.BodyParser(request)
 	if err != nil {
 		c.Log.Warnf("Failed to parse request body : %+v", err)
+		telemetry.EndFlow(flowCtx, span, start, "register", err)
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.Create(ctx.UserContext(), request)
+	response, err := c.UseCase.Create(flowCtx, request)
 	if err != nil {
 		c.Log.Warnf("Failed to register user : %+v", err)
+		telemetry.EndFlow(flowCtx, span, start, "register", err)
 		return err
 	}
 
+	telemetry.EndFlow(flowCtx, span, start, "register", nil)
 	return ctx.JSON(model.WebResponse[*model.UserResponse]{Data: response})
 }
 
 func (c *UserController) Login(ctx *fiber.Ctx) error {
+	flowCtx, span, start := telemetry.StartFlow(ctx.UserContext(), "login")
+	defer span.End()
+
 	request := new(model.LoginUserRequest)
 	err := ctx.BodyParser(request)
 	if err != nil {
 		c.Log.Warnf("Failed to parse request body : %+v", err)
+		telemetry.EndFlow(flowCtx, span, start, "login", err)
 		return fiber.ErrBadRequest
 	}
 
-	response, err := c.UseCase.Login(ctx.UserContext(), request)
+	response, err := c.UseCase.Login(flowCtx, request)
 	if err != nil {
 		c.Log.Warnf("Failed to login user : %+v", err)
+		telemetry.EndFlow(flowCtx, span, start, "login", err)
 		return err
 	}
 
+	telemetry.EndFlow(flowCtx, span, start, "login", nil)
 	return ctx.JSON(model.WebResponse[*model.UserResponse]{Data: response})
 }
 
 func (c *UserController) Current(ctx *fiber.Ctx) error {
+	flowCtx, span, start := telemetry.StartFlow(ctx.UserContext(), "current")
+	defer span.End()
+
 	auth := middleware.GetUser(ctx)
 
 	request := &model.GetUserRequest{
 		ID: auth.ID,
 	}
 
-	response, err := c.UseCase.Current(ctx.UserContext(), request)
+	response, err := c.UseCase.Current(flowCtx, request)
 	if err != nil {
 		c.Log.WithError(err).Warnf("Failed to get current user")
+		telemetry.EndFlow(flowCtx, span, start, "current", err)
 		return err
 	}
 
+	telemetry.EndFlow(flowCtx, span, start, "current", nil)
 	return ctx.JSON(model.WebResponse[*model.UserResponse]{Data: response})
 }
 
 func (c *UserController) Logout(ctx *fiber.Ctx) error {
+	flowCtx, span, start := telemetry.StartFlow(ctx.UserContext(), "logout")
+	defer span.End()
+
 	auth := middleware.GetUser(ctx)
 
 	request := &model.LogoutUserRequest{
 		ID: auth.ID,
 	}
 
-	response, err := c.UseCase.Logout(ctx.UserContext(), request)
+	response, err := c.UseCase.Logout(flowCtx, request)
 	if err != nil {
 		c.Log.WithError(err).Warnf("Failed to logout user")
+		telemetry.EndFlow(flowCtx, span, start, "logout", err)
 		return err
 	}
 
+	telemetry.EndFlow(flowCtx, span, start, "logout", nil)
 	return ctx.JSON(model.WebResponse[bool]{Data: response})
 }
 
 func (c *UserController) Update(ctx *fiber.Ctx) error {
+	flowCtx, span, start := telemetry.StartFlow(ctx.UserContext(), "update")
+	defer span.End()
+
 	auth := middleware.GetUser(ctx)
 
 	request := new(model.UpdateUserRequest)
 	if err := ctx.BodyParser(request); err != nil {
 		c.Log.Warnf("Failed to parse request body : %+v", err)
+		telemetry.EndFlow(flowCtx, span, start, "update", err)
 		return fiber.ErrBadRequest
 	}
 
 	request.ID = auth.ID
-	response, err := c.UseCase.Update(ctx.UserContext(), request)
+	response, err := c.UseCase.Update(flowCtx, request)
 	if err != nil {
 		c.Log.WithError(err).Warnf("Failed to update user")
+		telemetry.EndFlow(flowCtx, span, start, "update", err)
 		return err
 	}
 
+	telemetry.EndFlow(flowCtx, span, start, "update", nil)
 	return ctx.JSON(model.WebResponse[*model.UserResponse]{Data: response})
 }
