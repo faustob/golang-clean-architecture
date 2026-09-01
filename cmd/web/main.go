@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"golang-clean-architecture/internal/config"
 )
@@ -8,6 +9,16 @@ import (
 func main() {
 	viperConfig := config.NewViper()
 	log := config.NewLogger(viperConfig)
+
+	// Register the global OTel MeterProvider before any instrumented code
+	// (e.g. the otelsql-wrapped database connection) runs.
+	meterProvider := config.NewMeterProvider(log)
+	defer func() {
+		if err := meterProvider.Shutdown(context.Background()); err != nil {
+			log.Errorf("failed to shutdown otel meter provider: %v", err)
+		}
+	}()
+
 	db := config.NewDatabase(viperConfig, log)
 	validate := config.NewValidator(viperConfig)
 	app := config.NewFiber(viperConfig)
