@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"golang-clean-architecture/internal/config"
 )
@@ -8,6 +9,12 @@ import (
 func main() {
 	viperConfig := config.NewViper()
 	log := config.NewLogger(viperConfig)
+	telemetryShutdown := config.NewTelemetry(viperConfig, log)
+	defer func() {
+		if err := telemetryShutdown(context.Background()); err != nil {
+			log.Warnf("Failed to shutdown telemetry: %v", err)
+		}
+	}()
 	db := config.NewDatabase(viperConfig, log)
 	validate := config.NewValidator(viperConfig)
 	app := config.NewFiber(viperConfig)

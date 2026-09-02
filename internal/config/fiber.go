@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/gofiber/contrib/otelfiber/v2"
 	"github.com/gofiber/fiber/v2"
 	"github.com/spf13/viper"
 )
@@ -11,6 +12,8 @@ func NewFiber(config *viper.Viper) *fiber.App {
 		ErrorHandler: NewErrorHandler(),
 		Prefork:      config.GetBool("web.prefork"),
 	})
+
+	app.Use(otelfiber.Middleware())
 
 	return app
 }

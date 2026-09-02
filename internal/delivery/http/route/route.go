@@ -2,6 +2,7 @@ package route
 
 import (
 	"golang-clean-architecture/internal/delivery/http"
+	"golang-clean-architecture/internal/delivery/http/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -15,6 +16,7 @@ type RouteConfig struct {
 }
 
 func (c *RouteConfig) Setup() {
+	c.App.Use(middleware.NewOtelMiddleware())
 	c.SetupGuestRoute()
 	c.SetupAuthRoute()
 }
