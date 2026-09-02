@@ -1,12 +1,16 @@
 package http
 
 import (
+	"fmt"
+
 	"golang-clean-architecture/internal/delivery/http/middleware"
 	"golang-clean-architecture/internal/model"
 	"golang-clean-architecture/internal/usecase"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type AddressController struct {
@@ -36,6 +40,7 @@ func (c *AddressController) Create(ctx *fiber.Ctx) error {
 	response, err := c.UseCase.Create(ctx.UserContext(), request)
 	if err != nil {
 		c.Log.WithError(err).Error("failed to create address")
+		trace.SpanFromContext(ctx.UserContext()).SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
 		return err
 	}
 
@@ -54,6 +59,7 @@ func (c *AddressController) List(ctx *fiber.Ctx) error {
 	responses, err := c.UseCase.List(ctx.UserContext(), request)
 	if err != nil {
 		c.Log.WithError(err).Error("failed to list addresses")
+		trace.SpanFromContext(ctx.UserContext()).SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
 		return err
 	}
 
@@ -74,6 +80,7 @@ func (c *AddressController) Get(ctx *fiber.Ctx) error {
 	response, err := c.UseCase.Get(ctx.UserContext(), request)
 	if err != nil {
 		c.Log.WithError(err).Error("failed to get address")
+		trace.SpanFromContext(ctx.UserContext()).SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
 		return err
 	}
 
@@ -96,6 +103,7 @@ func (c *AddressController) Update(ctx *fiber.Ctx) error {
 	response, err := c.UseCase.Update(ctx.UserContext(), request)
 	if err != nil {
 		c.Log.WithError(err).Error("failed to update address")
+		trace.SpanFromContext(ctx.UserContext()).SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
 		return err
 	}
 
@@ -115,6 +123,7 @@ func (c *AddressController) Delete(ctx *fiber.Ctx) error {
 
 	if err := c.UseCase.Delete(ctx.UserContext(), request); err != nil {
 		c.Log.WithError(err).Error("failed to delete address")
+		trace.SpanFromContext(ctx.UserContext()).SetAttributes(attribute.String("error.type", fmt.Sprintf("%T", err)))
 		return err
 	}
 
