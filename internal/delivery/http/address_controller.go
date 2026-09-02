@@ -7,6 +7,8 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type AddressController struct {
@@ -33,6 +35,10 @@ func (c *AddressController) Create(ctx *fiber.Ctx) error {
 	request.UserId = auth.ID
 	request.ContactId = ctx.Params("contactId")
 
+	if span := trace.SpanFromContext(ctx.UserContext()); span.IsRecording() {
+		span.SetAttributes(attribute.String("contact.id", request.ContactId))
+	}
+
 	response, err := c.UseCase.Create(ctx.UserContext(), request)
 	if err != nil {
 		c.Log.WithError(err).Error("failed to create address")
@@ -49,6 +55,10 @@ func (c *AddressController) List(ctx *fiber.Ctx) error {
 	request := &model.ListAddressRequest{
 		UserId:    auth.ID,
 		ContactId: contactId,
+	}
+
+	if span := trace.SpanFromContext(ctx.UserContext()); span.IsRecording() {
+		span.SetAttributes(attribute.String("contact.id", contactId))
 	}
 
 	responses, err := c.UseCase.List(ctx.UserContext(), request)
@@ -69,6 +79,13 @@ func (c *AddressController) Get(ctx *fiber.Ctx) error {
 		UserId:    auth.ID,
 		ContactId: contactId,
 		ID:        addressId,
+	}
+
+	if span := trace.SpanFromContext(ctx.UserContext()); span.IsRecording() {
+		span.SetAttributes(
+			attribute.String("contact.id", contactId),
+			attribute.String("address.id", addressId),
+		)
 	}
 
 	response, err := c.UseCase.Get(ctx.UserContext(), request)
@@ -93,6 +110,13 @@ func (c *AddressController) Update(ctx *fiber.Ctx) error {
 	request.ContactId = ctx.Params("contactId")
 	request.ID = ctx.Params("addressId")
 
+	if span := trace.SpanFromContext(ctx.UserContext()); span.IsRecording() {
+		span.SetAttributes(
+			attribute.String("contact.id", request.ContactId),
+			attribute.String("address.id", request.ID),
+		)
+	}
+
 	response, err := c.UseCase.Update(ctx.UserContext(), request)
 	if err != nil {
 		c.Log.WithError(err).Error("failed to update address")
@@ -111,6 +135,13 @@ func (c *AddressController) Delete(ctx *fiber.Ctx) error {
 		UserId:    auth.ID,
 		ContactId: contactId,
 		ID:        addressId,
+	}
+
+	if span := trace.SpanFromContext(ctx.UserContext()); span.IsRecording() {
+		span.SetAttributes(
+			attribute.String("contact.id", contactId),
+			attribute.String("address.id", addressId),
+		)
 	}
 
 	if err := c.UseCase.Delete(ctx.UserContext(), request); err != nil {
